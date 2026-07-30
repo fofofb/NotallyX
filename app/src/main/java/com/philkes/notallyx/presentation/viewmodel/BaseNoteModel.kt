@@ -42,6 +42,10 @@ import com.philkes.notallyx.data.model.Item
 import com.philkes.notallyx.data.model.Label
 import com.philkes.notallyx.data.model.SearchResult
 import com.philkes.notallyx.data.model.deepCopy
+import com.philkes.notallyx.data.model.toHtml
+import com.philkes.notallyx.data.model.toJson
+import com.philkes.notallyx.data.model.toMarkdown
+import com.philkes.notallyx.data.model.toTxt
 import com.philkes.notallyx.presentation.activity.main.fragment.settings.SettingsFragment.Companion.EXTRA_SHOW_IMPORT_BACKUPS_FOLDER
 import com.philkes.notallyx.presentation.activity.note.refreshStatusBarPin
 import com.philkes.notallyx.presentation.exportedText
@@ -600,7 +604,66 @@ class BaseNoteModel(private val app: Application) : AndroidViewModel(app) {
     }
 
     fun exportSelectedNoteToFile(fileUri: Uri, snackbarView: View) {
-        exportNoteToFile(fileUri, actionMode.selectedNotes.values.first(), snackbarView)
+        val notes = actionMode.selectedNotes.values
+        if (
+            notes.size > 1 &&
+                preferences.exportMode.value ==
+                    com.philkes.notallyx.presentation.viewmodel.preference.ExportMode.SINGLE_FILE
+        ) {
+            exportNotesToSingleFile(fileUri, notes, snackbarView)
+        } else {
+            exportNoteToFile(fileUri, notes.first(), snackbarView)
+        }
+    }
+
+    private fun exportNotesToSingleFile(
+        fileUri: Uri,
+        notes: Collection<BaseNote>,
+        snackbarView: View,
+    ) {
+        val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
+            app.log(TAG, throwable = throwable)
+            actionMode.close(true)
+            app.showToast(R.string.something_went_wrong)
+        }
+        viewModelScope.launch(exceptionHandler) {
+            withContext(Dispatchers.IO) {
+                val includeSeparator = preferences.exportIncludeSeparator.value
+                val includeTimestamp = preferences.exportIncludeTimestamp.value
+                val separator = if (includeSeparator) "\n---\n" else "\n"
+
+                val content =
+                    notes.joinToString(separator) { note ->
+                        when (selectedExportMimeType) {
+                            ExportMimeType.TXT ->
+                                note.toTxt(
+                                    includeTitle = true,
+                                    includeCreationDate = includeTimestamp,
+                                )
+                            ExportMimeType.MD -> note.toMarkdown(includeTimestamp)
+                            ExportMimeType.JSON -> note.toJson()
+                            ExportMimeType.HTML ->
+                                note.toHtml(includeTimestamp, app.getCurrentImagesDirectory())
+                            else ->
+                                note.toTxt(
+                                    includeTitle = true,
+                                    includeCreationDate = includeTimestamp,
+                                )
+                        }
+                    }
+
+                app.contentResolver.openOutputStream(fileUri)?.use { stream ->
+                    java.io.OutputStreamWriter(stream).use { writer -> writer.write(content) }
+                }
+            }
+            actionMode.close(true)
+            val message = app.getQuantityString(R.plurals.exported_notes, notes.size)
+            snackbarView.showFileSnackbar(
+                "$message to '${app.toReadablePath(fileUri)}'",
+                fileUri,
+                selectedExportMimeType,
+            )
+        }
     }
 
     private fun View.showFileSnackbar(msg: String, fileUri: Uri, mimeType: ExportMimeType) {

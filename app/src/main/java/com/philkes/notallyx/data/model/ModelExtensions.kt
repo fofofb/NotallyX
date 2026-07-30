@@ -273,7 +273,11 @@ fun BaseNote.toHtml(showDateCreated: Boolean, imagesRootFolder: File?) = buildSt
 
 fun List<BaseNote>.toNoteIdReminders() = map { NoteIdReminder(it.id, it.reminders) }
 
-fun BaseNote.toMarkdown(): String = buildString {
+fun BaseNote.toMarkdown(includeTimestamp: Boolean = false): String = buildString {
+    if (includeTimestamp) {
+        val date = java.text.DateFormat.getDateInstance(java.text.DateFormat.FULL).format(timestamp)
+        append("$date\n\n")
+    }
     when (type) {
         Type.NOTE -> {
             append(createMarkdownFromBodyAndSpans(body, spans))

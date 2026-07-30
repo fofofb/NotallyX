@@ -206,6 +206,18 @@ class NotallyXPreferences private constructor(private val context: Context) {
     val dataInPublicFolder =
         BooleanPreference("dataOnExternalStorage", preferences, false, R.string.data_in_public)
 
+    val exportMode =
+        createEnumPreference(
+            preferences,
+            "exportMode",
+            ExportMode.SINGLE_FILES,
+            R.string.export_mode,
+        )
+    val exportIncludeSeparator =
+        BooleanPreference("exportIncludeSeparator", preferences, true, R.string.include_separator)
+    val exportIncludeTimestamp =
+        BooleanPreference("exportIncludeTimestamp", preferences, false, R.string.include_timestamp)
+
     val editNoteActivityTopActions =
         createEnumListPreference(
             preferences,
@@ -349,6 +361,9 @@ class NotallyXPreferences private constructor(private val context: Context) {
                 editNoteActivityBottomAction,
                 defaultNoteColor,
                 defaultListNoteViewMode,
+                exportMode,
+                exportIncludeSeparator,
+                exportIncludeTimestamp,
             )
             .forEach { it.refresh() }
     }

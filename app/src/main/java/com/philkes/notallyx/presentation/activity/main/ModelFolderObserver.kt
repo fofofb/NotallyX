@@ -11,17 +11,20 @@ import com.philkes.notallyx.R
 import com.philkes.notallyx.data.NotallyDatabase
 import com.philkes.notallyx.data.model.BaseNote
 import com.philkes.notallyx.data.model.Folder
+import com.philkes.notallyx.data.model.toTxt
 import com.philkes.notallyx.presentation.activity.note.NoteActionHandler
 import com.philkes.notallyx.presentation.add
 import com.philkes.notallyx.presentation.checkNotificationPermission
 import com.philkes.notallyx.presentation.getQuantityString
 import com.philkes.notallyx.presentation.movedToResId
 import com.philkes.notallyx.presentation.setCancelButton
+import com.philkes.notallyx.presentation.showToast
 import com.philkes.notallyx.presentation.view.misc.NotNullLiveData
 import com.philkes.notallyx.presentation.view.misc.tristatecheckbox.TriStateCheckBox
 import com.philkes.notallyx.presentation.view.misc.tristatecheckbox.setMultiChoiceTriStateItems
 import com.philkes.notallyx.presentation.viewmodel.BaseNoteModel
 import com.philkes.notallyx.presentation.viewmodel.ExportMimeType
+import com.philkes.notallyx.utils.copyToClipBoard
 import com.philkes.notallyx.utils.deleteAttachments
 import com.philkes.notallyx.utils.shareNote
 import com.philkes.notallyx.utils.showColorSelectDialog
@@ -63,6 +66,7 @@ class ModelFolderObserver(
         menu.add(R.string.duplicate, R.drawable.content_copy) {
             baseModel.duplicateSelectedBaseNotes()
         }
+        menu.add(R.string.copy, R.drawable.content_copy) { copyToClipboard() }
         menu.add(R.string.archive, R.drawable.archive) { moveNotes(Folder.ARCHIVED) }
         menu.addChangeColor()
         val pinnedToStatus = menu.addPinnedToStatus()
@@ -79,6 +83,7 @@ class ModelFolderObserver(
         menu.add(R.string.duplicate, R.drawable.content_copy) {
             baseModel.duplicateSelectedBaseNotes()
         }
+        menu.add(R.string.copy, R.drawable.content_copy) { copyToClipboard() }
         menu.addExportMenu(MenuItem.SHOW_AS_ACTION_ALWAYS)
         val pinned = menu.addPinned()
         menu.addLabels()
@@ -94,6 +99,7 @@ class ModelFolderObserver(
         menu.add(R.string.delete_forever, R.drawable.delete, MenuItem.SHOW_AS_ACTION_ALWAYS) {
             deleteForever()
         }
+        menu.add(R.string.copy, R.drawable.content_copy) { copyToClipboard() }
         menu.addExportMenu()
         menu.addChangeColor()
         val share = menu.add(R.string.share, R.drawable.share) { share() }
@@ -252,6 +258,22 @@ class ModelFolderObserver(
     internal fun share() {
         val baseNote = baseModel.actionMode.getFirstNote()
         activity.shareNote(baseNote)
+    }
+
+    internal fun copyToClipboard() {
+        val selectedNotes = model.actionMode.selectedNotes.values
+        val preferences = model.preferences
+        val includeSeparator = preferences.exportIncludeSeparator.value
+        val includeTimestamp = preferences.exportIncludeTimestamp.value
+        val separator = if (includeSeparator) "\n---\n" else "\n"
+
+        val textToCopy =
+            selectedNotes.joinToString(separator) { note ->
+                note.toTxt(includeTitle = true, includeCreationDate = includeTimestamp)
+            }
+        activity.copyToClipBoard(textToCopy)
+        activity.showToast(R.string.copied_to_clipboard)
+        model.actionMode.close(true)
     }
 
     internal fun deleteForever() {

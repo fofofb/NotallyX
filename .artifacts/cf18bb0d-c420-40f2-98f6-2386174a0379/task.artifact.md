@@ -1,0 +1,5 @@
+- [x] Fix Gradle build error in `app/build.gradle.kts`
+- [x] Add `copied_to_clipboard` string to `strings.xml`
+- [x] Implement `copyToClipboard` in `ModelFolderObserver.kt`
+- [x] Add "Copy" menu item to `ModelFolderObserver.kt`
+- [x] Verify changes

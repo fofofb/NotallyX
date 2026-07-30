@@ -179,6 +179,29 @@
           layout="@layout/preference_stepper" />
 
         <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="?android:attr/listDivider" />
+
+        <TextView
+            style="@style/PreferenceHeader"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/export" />
+
+        <include
+            android:id="@+id/ExportMode"
+            layout="@layout/preference" />
+
+        <include
+            android:id="@+id/ExportIncludeSeparator"
+            layout="@layout/preference" />
+
+        <include
+            android:id="@+id/ExportIncludeTimestamp"
+            layout="@layout/preference" />
+
+        <View
           android:layout_width="match_parent"
           android:layout_height="1dp"
           android:background="?android:attr/listDivider" />

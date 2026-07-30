@@ -109,6 +109,7 @@ class SettingsFragment : Fragment() {
             setupAutoBackups(binding)
             setupSecurity(binding)
             setupSettings(binding)
+            setupExport(binding)
         }
         setupAbout(binding)
         return binding.root
@@ -530,6 +531,36 @@ class SettingsFragment : Fragment() {
                 periodicBackups,
                 periodicBackupLastExecution,
             )
+        }
+    }
+
+    private fun NotallyXPreferences.setupExport(binding: FragmentSettingsBinding) {
+        exportMode.observe(viewLifecycleOwner) { value ->
+            binding.ExportMode.setup(exportMode, value, requireContext()) { newValue ->
+                model.savePreference(exportMode, newValue)
+            }
+        }
+        exportIncludeSeparator.observe(viewLifecycleOwner) { value ->
+            binding.ExportIncludeSeparator.setup(
+                exportIncludeSeparator,
+                value,
+                requireContext(),
+                layoutInflater,
+                R.string.include_separator,
+            ) { enabled ->
+                model.savePreference(exportIncludeSeparator, enabled)
+            }
+        }
+        exportIncludeTimestamp.observe(viewLifecycleOwner) { value ->
+            binding.ExportIncludeTimestamp.setup(
+                exportIncludeTimestamp,
+                value,
+                requireContext(),
+                layoutInflater,
+                R.string.include_timestamp,
+            ) { enabled ->
+                model.savePreference(exportIncludeTimestamp, enabled)
+            }
         }
     }
 

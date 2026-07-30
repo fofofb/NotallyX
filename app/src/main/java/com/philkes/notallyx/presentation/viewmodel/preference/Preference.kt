@@ -351,6 +351,11 @@ class EncryptedPassphrasePreference(
     }
 }
 
+enum class ExportMode(override val textResId: Int) : StaticTextProvider {
+    SINGLE_FILES(R.string.single_files),
+    SINGLE_FILE(R.string.single_file_concatenated),
+}
+
 enum class NotesView(override val textResId: Int) : StaticTextProvider {
     LIST(R.string.list),
     GRID(R.string.grid),

@@ -100,6 +100,7 @@
     <string name="convert_to_text_note">Convert to Text Note</string>
     <string name="copied_link">Copied Link to Clipboard</string>
     <string name="copy">Copy</string>
+    <string name="copied_to_clipboard">Copied to clipboard</string>
     <string name="count" translatable="false">%1$d / %2$d</string>
     <string name="crash_export_backup">Unfortunately, exporting the backup failed.\nYou can use \'%1$s\' button to report the crash or try to export the raw database file (SQLite) via \'%2$s\'. It will only include notes contents, no attachments. But if it succeeds you can import it back via the Import from other apps option.</string>
     <string name="crash_export_backup_failed">Unfortunately, exporting the backup failed.\nPlease use the \'%1$s\' button to report the crash</string>
@@ -183,6 +184,11 @@
     <string name="every">Every</string>
     <string name="export">Export</string>
     <string name="export_backup">Export backup</string>
+    <string name="export_mode">Export Mode</string>
+    <string name="single_files">Multiple Files (one per note)</string>
+    <string name="single_file_concatenated">Single File (all notes combined)</string>
+    <string name="include_separator">Include Separator between notes</string>
+    <string name="include_timestamp">Include Timestamp in notes</string>
     <string name="export_database">Export DB</string>
     <string name="export_settings">Export Settings</string>
     <string name="export_settings_failure">Failed to export settings, did you choose an invalid path\?</string>

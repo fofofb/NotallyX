@@ -863,21 +863,20 @@ fun exportPlainTextFile(
     outputFile: DocumentFile,
     exportType: ExportMimeType,
 ) {
+    val preferences = NotallyXPreferences.getInstance(app)
+    val includeTimestamp = preferences.exportIncludeTimestamp.value
     app.contentResolver.openOutputStream(outputFile.uri)?.use { stream ->
         OutputStreamWriter(stream).use { writer ->
             writer.write(
                 when (exportType) {
                     ExportMimeType.TXT ->
-                        note.toTxt(includeTitle = false, includeCreationDate = false)
+                        note.toTxt(includeTitle = false, includeCreationDate = includeTimestamp)
 
                     ExportMimeType.JSON -> note.toJson()
                     ExportMimeType.HTML ->
-                        note.toHtml(
-                            NotallyXPreferences.getInstance(app).showDateCreated(),
-                            app.getCurrentImagesDirectory(),
-                        )
+                        note.toHtml(includeTimestamp, app.getCurrentImagesDirectory())
 
-                    ExportMimeType.MD -> note.toMarkdown()
+                    ExportMimeType.MD -> note.toMarkdown(includeTimestamp)
                     else -> TODO("Unsupported MimeType for Export: $exportType")
                 }
             )
@@ -1030,8 +1029,23 @@ fun LockedActivity<*>.exportNotes(
     exportToFolderResultLauncher: ActivityResultLauncher<Intent>,
 ) {
     baseModel.selectedExportMimeType = mimeType
+    val preferences = NotallyXPreferences.getInstance(this)
     if (notes.size == 1) {
         exportNote(notes.first(), mimeType, exportToFileResultLauncher)
+    } else if (
+        preferences.exportMode.value ==
+            com.philkes.notallyx.presentation.viewmodel.preference.ExportMode.SINGLE_FILE
+    ) {
+        val suggestedName = getString(R.string.notes) + "." + mimeType.fileExtension
+        val intent =
+            Intent(Intent.ACTION_CREATE_DOCUMENT)
+                .apply {
+                    type = mimeType.mimeType
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    putExtra(Intent.EXTRA_TITLE, suggestedName)
+                }
+                .wrapWithChooser(this)
+        exportToFileResultLauncher.launch(intent)
     } else {
         lifecycleScope.launch {
             val intent =
