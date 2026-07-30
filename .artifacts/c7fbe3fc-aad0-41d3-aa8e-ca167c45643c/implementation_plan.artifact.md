@@ -1,72 +1,52 @@
-# Implementation Plan - Enhanced Export and Copy Options
+# Implementation Plan - Export Enhancements and Cleanup
 
-This plan outlines the changes required to add flexible export and copy options to NotallyX, including the ability to export all notes into a single file and customize the export style (separators and timestamps). It also includes adding a GitHub Action for automatic builds.
-
-## User Review Required
-
-> [!IMPORTANT]
-> - New preferences will be added under a new "Export" section in Settings.
-> - The "Copy to Clipboard" feature for multiple notes will now respect the "Include Separator" and "Include Timestamp" settings.
-> - Exporting multiple notes to a "Single File" will prompt the user to choose a destination file instead of a folder.
+This plan addresses three requests: translating the export mode menu, fixing PDF export failures for single-file (concatenated) mode, and removing the "DEBUG" suffix from filenames.
 
 ## Proposed Changes
 
-### [Settings & Preferences]
+### 1. Translation Enhancements
+Add missing Chinese translations (CN and TW) for export-related settings.
 
-#### [MODIFY] [Preference.kt](file:///D:/Users/A/Desktop/notallyX/NotallyX/app/src/main/java/com/philkes/notallyx/presentation/viewmodel/preference/Preference.kt)
-- Add `ExportMode` enum with `SINGLE_FILES` and `SINGLE_FILE`.
+#### [MODIFY] [strings.xml (zh-rCN)](file:///D:/Users/A/Desktop/notallyX/NotallyX/app/src/main/res/values-zh-rCN/strings.xml)
+- Add translations for `export_mode`, `single_files`, `single_file_concatenated`, `include_separator`, and `include_timestamp`.
 
-#### [MODIFY] [NotallyXPreferences.kt](file:///D:/Users/A/Desktop/notallyX/NotallyX/app/src/main/java/com/philkes/notallyx/presentation/viewmodel/preference/NotallyXPreferences.kt)
-- Add `exportMode` preference.
-- Add `exportIncludeSeparator` preference (default: true).
-- Add `exportIncludeTimestamp` preference (default: false).
+#### [MODIFY] [strings.xml (zh-rTW)](file:///D:/Users/A/Desktop/notallyX/NotallyX/app/src/main/res/values-zh-rTW/strings.xml)
+- Add translations for `export_mode`, `single_files`, `single_file_concatenated`, `include_separator`, and `include_timestamp`.
 
-#### [MODIFY] [strings.xml](file:///D:/Users/A/Desktop/notallyX/NotallyX/app/src/main/res/values/strings.xml)
-- Add strings for the new export settings and options.
-
-#### [MODIFY] [fragment_settings.xml](file:///D:/Users/A/Desktop/notallyX/NotallyX/app/src/main/res/layout/fragment_settings.xml)
-- Add a new "Export" section with the new settings.
-
-#### [MODIFY] [SettingsFragment.kt](file:///D:/Users/A/Desktop/notallyX/NotallyX/app/src/main/java/com/philkes/notallyx/presentation/activity/main/fragment/settings/SettingsFragment.kt)
-- Implement UI logic to observe and save the new export preferences.
-
----
-
-### [Export & Copy Logic]
-
-#### [MODIFY] [ModelExtensions.kt](file:///D:/Users/A/Desktop/notallyX/NotallyX/app/src/main/java/com/philkes/notallyx/data/model/ModelExtensions.kt)
-- Update `toTxt` to support custom timestamp inclusion.
-
-#### [MODIFY] [ModelFolderObserver.kt](file:///D:/Users/A/Desktop/notallyX/NotallyX/app/src/main/java/com/philkes/notallyx/presentation/activity/main/ModelFolderObserver.kt)
-- Update `copyToClipboard` to use the new preferences for separators and timestamps.
-
-#### [MODIFY] [ExportExtensions.kt](file:///D:/Users/A/Desktop/notallyX/NotallyX/app/src/main/java/com/philkes/notallyx/utils/backup/ExportExtensions.kt)
-- Update `exportPlainTextFile` to respect the `exportIncludeTimestamp` preference.
-- Modify `exportNotes` to handle `SINGLE_FILE` mode:
-    - If `SINGLE_FILE` and multiple notes are selected, launch `ACTION_CREATE_DOCUMENT` instead of `ACTION_OPEN_DOCUMENT_TREE`.
-- Add a new helper `exportSelectedNotesToSingleFile` in `BaseNoteModel` (or update existing) to handle concatenation of notes with separators.
+### 2. PDF Export Fixes
+Fix the issue where selecting PDF in "Single File" (concatenated) export mode results in a text file instead of a valid PDF. Also, improve the robustness of the PDF printing logic.
 
 #### [MODIFY] [BaseNoteModel.kt](file:///D:/Users/A/Desktop/notallyX/NotallyX/app/src/main/java/com/philkes/notallyx/presentation/viewmodel/BaseNoteModel.kt)
-- Add `exportSelectedNotesToFile` (for multiple notes to single file) and update `exportNotesToFolder` if needed.
+- Update `exportNotesToSingleFile` to handle `ExportMimeType.PDF`.
+- When PDF is selected, generate a combined HTML string from all notes and call a new `exportPdfFile` overload.
 
----
+#### [MODIFY] [ExportExtensions.kt](file:///D:/Users/A/Desktop/notallyX/NotallyX/app/src/main/java/com/philkes/notallyx/utils/backup/ExportExtensions.kt)
+- Add an overload for `exportPdfFile` that accepts a pre-generated HTML string instead of a single `BaseNote`.
+- Refactor the existing `exportPdfFile` to use this new overload.
 
-### [Infrastructure]
+#### [MODIFY] [PdfExtensions.kt](file:///D:/Users/A/Desktop/notallyX/NotallyX/app/src/main/java/android/print/PdfExtensions.kt)
+- Change `openFileDescriptor` mode from `"rw"` to `"w"` in `writeToFile`. This is safer for Storage Access Framework (SAF) URIs where reading might not be supported or necessary for printing.
+- (Optional) Investigate if `file://` URIs need special handling for `openFileDescriptor` on modern Android versions.
 
-#### [NEW] [android-build.yml](file:///D:/Users/A/Desktop/notallyX/NotallyX/.github/workflows/android-build.yml)
-- Add a GitHub Action workflow to build the project (APK/Bundle) on push to `main` or manual trigger.
+### 3. Remove "DEBUG" from Filenames
+Remove the `-DEBUG` suffix from the version name and app name in debug builds to satisfy the user's request for cleaner filenames.
+
+#### [MODIFY] [build.gradle.kts](file:///D:/Users/A/Desktop/notallyX/NotallyX/app/build.gradle.kts)
+- In the `debug` build type:
+    - Set `versionNameSuffix = ""` (or remove it).
+    - Change `resValue("string", "app_name", "NotallyX DEBUG")` to `"NotallyX"`.
+- This ensures that `BuildConfig.VERSION_NAME` and `R.string.app_name` (often used in filenames) do not contain "DEBUG".
 
 ## Verification Plan
 
 ### Automated Tests
-- Build the project using `./gradlew assembleDebug` to ensure no regressions.
-- (Optional) Add unit tests for `toTxt` and note concatenation logic.
+- I'll rely on the existing build process to ensure no regressions in other areas.
+- PDF export cannot be easily unit-tested as it involves `WebView` and the Android `Print` system, but the logic changes can be verified by code review.
 
 ### Manual Verification
-1. Open Settings and verify the new "Export" section.
-2. Change "Export Mode" to "Single File".
-3. Select multiple notes in the main list and click "Export" (TXT).
-4. Verify that it prompts for a file location and the resulting file contains all notes.
-5. Toggle "Include Separator" and "Include Timestamp" and verify the exported file content.
-6. Verify the "Copy to Clipboard" behavior respects the new settings.
-7. Push changes to GitHub and verify that the "Android Build" action runs successfully.
+- Deploy a debug build of the app.
+- Go to Settings -> Export Mode and verify translations for "Export Mode" and its options in Chinese (CN and TW).
+- Select multiple notes and export them as a "Single File" in PDF format. Verify that a valid PDF is created.
+- Export a single note as PDF and verify it still works.
+- Verify the APK filename and the app name in the launcher no longer contain "DEBUG".
+- Verify any exported backup or file does not contain "DEBUG" if it was previously present.
