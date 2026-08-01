@@ -35,6 +35,36 @@ private const val NOTE_URL_PREFIX = "note://"
 private val NOTE_URL_POSTFIX_NOTE = "/${Type.NOTE.name}"
 private val NOTE_URL_POSTFIX_LIST = "/${Type.LIST.name}"
 
+private const val HTML_STYLES =
+    """
+    <style>
+        @page {
+            margin: 1in;
+        }
+
+        body {
+            font-family: sans-serif;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+            margin-top: 12px;
+            margin-bottom: 12px;
+        }
+
+        h2, h3 {
+            margin-bottom: 12px;
+        }
+
+        p {
+            margin-bottom: 10px;
+        }
+    </style>
+"""
+
 fun CharSequence?.isNoteUrl(): Boolean {
     return this?.let { startsWith(NOTE_URL_PREFIX) } ?: false
 }
@@ -190,45 +220,9 @@ private fun JSONObject.getLongOrDefault(key: String, defaultValue: Long): Long {
     }
 }
 
-fun BaseNote.toHtml(showDateCreated: Boolean, imagesRootFolder: File?) = buildString {
+fun BaseNote.toHtmlContent(showDateCreated: Boolean, imagesRootFolder: File?) = buildString {
     val date = DateFormat.getDateInstance(DateFormat.FULL).format(timestamp)
     val title = Html.escapeHtml(title)
-
-    append("<!DOCTYPE html>")
-    append("<html><head>")
-    append("<meta charset=\"UTF-8\"><title>$title</title>")
-    append(
-        """
-    <style>
-        @page {
-            margin: 1in;
-        }
-
-        body {
-            font-family: sans-serif;
-            line-height: 1.5;
-            word-wrap: break-word;
-        }
-
-        img {
-            max-width: 100%;
-            height: auto;
-            margin-top: 12px;
-            margin-bottom: 12px;
-        }
-
-        h2, h3 {
-            margin-bottom: 12px;
-        }
-
-        p {
-            margin-bottom: 10px;
-        }
-    </style>
-    """
-            .trimIndent()
-    )
-    append("</head><body>")
     append("<h2>$title</h2>")
 
     if (showDateCreated) {
@@ -268,6 +262,30 @@ fun BaseNote.toHtml(showDateCreated: Boolean, imagesRootFolder: File?) = buildSt
             }
         }
     }
+}
+
+fun BaseNote.toHtml(showDateCreated: Boolean, imagesRootFolder: File?) = buildString {
+    append("<!DOCTYPE html>")
+    append("<html><head>")
+    append("<meta charset=\"UTF-8\"><title>${Html.escapeHtml(title)}</title>")
+    append(HTML_STYLES.trimIndent())
+    append("</head><body>")
+    append(toHtmlContent(showDateCreated, imagesRootFolder))
+    append("</body></html>")
+}
+
+fun Collection<BaseNote>.toHtml(
+    showDateCreated: Boolean,
+    imagesRootFolder: File?,
+    includeSeparator: Boolean = false,
+) = buildString {
+    val separator = if (includeSeparator) "<hr>" else ""
+    append("<!DOCTYPE html>")
+    append("<html><head>")
+    append("<meta charset=\"UTF-8\">")
+    append(HTML_STYLES.trimIndent())
+    append("</head><body>")
+    append(joinToString(separator) { it.toHtmlContent(showDateCreated, imagesRootFolder) })
     append("</body></html>")
 }
 

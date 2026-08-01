@@ -7,6 +7,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.print.PdfPrintListener
+import android.print.printPdf
 import android.view.View
 import androidx.annotation.RequiresApi
 import androidx.core.net.toUri
@@ -627,42 +628,74 @@ class BaseNoteModel(private val app: Application) : AndroidViewModel(app) {
             app.showToast(R.string.something_went_wrong)
         }
         viewModelScope.launch(exceptionHandler) {
-            withContext(Dispatchers.IO) {
-                val includeSeparator = preferences.exportIncludeSeparator.value
-                val includeTimestamp = preferences.exportIncludeTimestamp.value
-                val separator = if (includeSeparator) "\n---\n" else "\n"
-
-                val content =
-                    notes.joinToString(separator) { note ->
-                        when (selectedExportMimeType) {
-                            ExportMimeType.TXT ->
-                                note.toTxt(
-                                    includeTitle = true,
-                                    includeCreationDate = includeTimestamp,
-                                )
-                            ExportMimeType.MD -> note.toMarkdown(includeTimestamp)
-                            ExportMimeType.JSON -> note.toJson()
-                            ExportMimeType.HTML ->
-                                note.toHtml(includeTimestamp, app.getCurrentImagesDirectory())
-                            else ->
-                                note.toTxt(
-                                    includeTitle = true,
-                                    includeCreationDate = includeTimestamp,
-                                )
+            if (selectedExportMimeType == ExportMimeType.PDF) {
+                val html =
+                    notes.toHtml(
+                        preferences.exportIncludeTimestamp.value,
+                        app.getCurrentImagesDirectory(),
+                        preferences.exportIncludeSeparator.value,
+                    )
+                app.printPdf(
+                    DocumentFile.fromSingleUri(app, fileUri)!!,
+                    html,
+                    object : PdfPrintListener {
+                        override fun onSuccess(file: DocumentFile) {
+                            actionMode.close(true)
+                            val message =
+                                app.getQuantityString(R.plurals.exported_notes, notes.size)
+                            snackbarView.showFileSnackbar(
+                                "$message to '${app.toReadablePath(fileUri)}'",
+                                fileUri,
+                                ExportMimeType.PDF,
+                            )
                         }
-                    }
 
-                app.contentResolver.openOutputStream(fileUri)?.use { stream ->
-                    java.io.OutputStreamWriter(stream).use { writer -> writer.write(content) }
+                        override fun onFailure(message: CharSequence?) {
+                            app.log(TAG, stackTrace = message as String?)
+                            actionMode.close(true)
+                        }
+                    },
+                )
+            } else {
+                withContext(Dispatchers.IO) {
+                    val includeSeparator = preferences.exportIncludeSeparator.value
+                    val includeTimestamp = preferences.exportIncludeTimestamp.value
+                    val separator = if (includeSeparator) "\n---\n" else "\n"
+
+                    val content =
+                        notes.joinToString(separator) { note ->
+                            when (selectedExportMimeType) {
+                                ExportMimeType.TXT ->
+                                    note.toTxt(
+                                        includeTitle = true,
+                                        includeCreationDate = includeTimestamp,
+                                    )
+
+                                ExportMimeType.MD -> note.toMarkdown(includeTimestamp)
+                                ExportMimeType.JSON -> note.toJson()
+                                ExportMimeType.HTML ->
+                                    note.toHtml(includeTimestamp, app.getCurrentImagesDirectory())
+
+                                else ->
+                                    note.toTxt(
+                                        includeTitle = true,
+                                        includeCreationDate = includeTimestamp,
+                                    )
+                            }
+                        }
+
+                    app.contentResolver.openOutputStream(fileUri)?.use { stream ->
+                        java.io.OutputStreamWriter(stream).use { writer -> writer.write(content) }
+                    }
                 }
+                actionMode.close(true)
+                val message = app.getQuantityString(R.plurals.exported_notes, notes.size)
+                snackbarView.showFileSnackbar(
+                    "$message to '${app.toReadablePath(fileUri)}'",
+                    fileUri,
+                    selectedExportMimeType,
+                )
             }
-            actionMode.close(true)
-            val message = app.getQuantityString(R.plurals.exported_notes, notes.size)
-            snackbarView.showFileSnackbar(
-                "$message to '${app.toReadablePath(fileUri)}'",
-                fileUri,
-                selectedExportMimeType,
-            )
         }
     }
 
