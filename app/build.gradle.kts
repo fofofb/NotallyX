@@ -213,6 +213,11 @@ tasks.register("generateChangelogs") {
     doLast {
         val githubToken = providers.gradleProperty("CHANGELOG_GITHUB_TOKEN").orNull
 
+        if (githubToken.isNullOrEmpty() && System.getenv("GITHUB_ACTIONS") == "true") {
+            println("Skipping generateChangelogs in CI because GITHUB_TOKEN is not explicitly provided for the ruby script")
+            return@doLast
+        }
+
         val command = mutableListOf(
             "bash",
             rootProject.file("generate-changelogs.sh").absolutePath,
