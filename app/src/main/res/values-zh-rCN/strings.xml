@@ -175,6 +175,11 @@
     <string name="every">每</string>
     <string name="export">导出</string>
     <string name="export_backup">导出备份</string>
+    <string name="export_mode">导出模式</string>
+    <string name="single_files">多个文件（每则笔记一个文件）</string>
+    <string name="single_file_concatenated">单个文件（所有笔记合并）</string>
+    <string name="include_separator">在笔记之间包含分隔符</string>
+    <string name="include_timestamp">在笔记中包含时间戳</string>
     <string name="export_settings">导出设置</string>
     <string name="export_settings_failure">未能导出设置，你选择的路径有效吗？</string>
     <string name="export_settings_message">所有设置都导出为 JSON 文件，该文件可用于重新导所存储的设置。请注意，这个文件中并不包含已加密的设置，如自动备份密码或生物特征加密密钥</string>

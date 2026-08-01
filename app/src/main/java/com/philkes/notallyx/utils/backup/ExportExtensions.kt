@@ -62,7 +62,6 @@ import com.philkes.notallyx.utils.getCurrentAudioDirectory
 import com.philkes.notallyx.utils.getCurrentFilesDirectory
 import com.philkes.notallyx.utils.getCurrentImagesDirectory
 import com.philkes.notallyx.utils.getCurrentMediaRoot
-import com.philkes.notallyx.utils.getExportedPath
 import com.philkes.notallyx.utils.getLogFileUri
 import com.philkes.notallyx.utils.listZipFiles
 import com.philkes.notallyx.utils.log
@@ -784,20 +783,16 @@ fun exportPdfFile(
     total: Int? = null,
     pdfPrintListener: PdfPrintListener? = null,
 ) {
-    val tempFile = DocumentFile.fromFile(File(app.getExportedPath(), "temp.pdf"))
     val html =
         note.toHtml(
             NotallyXPreferences.getInstance(app).showDateCreated(),
             app.getCurrentImagesDirectory(),
         )
     app.printPdf(
-        tempFile,
+        outputFile,
         html,
         object : PdfPrintListener {
             override fun onSuccess(file: DocumentFile) {
-                app.contentResolver.openOutputStream(outputFile.uri)?.use { outStream ->
-                    app.contentResolver.openInputStream(file.uri)?.copyTo(outStream)
-                }
                 if (progress != null) {
                     progress.postValue(
                         BackupProgress(current = counter!!.incrementAndGet(), total = total!!)

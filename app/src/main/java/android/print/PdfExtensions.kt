@@ -33,6 +33,7 @@ fun Context.printPdf(file: DocumentFile, content: String, pdfPrintListener: PdfP
                 failingUrl: String?,
             ) {
                 Log.w(TAG, "PDF WebView load error $errorCode: $description @ $failingUrl")
+                pdfPrintListener.onFailure(description)
             }
         }
 }
@@ -75,8 +76,12 @@ private fun ContentResolver.writeToFile(
         }
 
     val pages = arrayOf(PageRange.ALL_PAGES)
-    val fileDescriptor = openFileDescriptor(file.uri, "rw")
-    adapter.onWrite(pages, fileDescriptor, null, onWriteResult)
+    val fileDescriptor = openFileDescriptor(file.uri, "rwt")
+    if (fileDescriptor != null) {
+        adapter.onWrite(pages, fileDescriptor, null, onWriteResult)
+    } else {
+        pdfPrintListener.onFailure("Could not open file descriptor")
+    }
 }
 
 private fun createPrintAttributes(): PrintAttributes {
