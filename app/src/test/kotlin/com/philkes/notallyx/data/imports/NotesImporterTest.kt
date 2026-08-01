@@ -1,8 +1,5 @@
 package com.philkes.notallyx.data.imports
 
-// TODO: wait for new roboelectric version for API 35
-//  see https://github.com/robolectric/robolectric/pull/9680
-
 import android.app.Application
 import androidx.core.net.toUri
 import androidx.room.Room
@@ -19,8 +16,10 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35])
 class NotesImporterTest {
     private lateinit var application: Application
     private lateinit var database: NotallyDatabase
